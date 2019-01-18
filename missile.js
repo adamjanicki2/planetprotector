@@ -12,15 +12,25 @@ var yc;
 var int;
 var ts=0;
 var ts1=0;
+var counter=0;
 var yellow3=false;
 var enter=false;
 var radius=4;
 var level=1;
+var snowSpeed = 0.8;
+var number;
+var makesnow=true;
 var xp=0;
 var yp=0;
 var win=false;
+var width=[];
+var height=[];
+var snowY=[];
+var snowX=[];
 var hits=0;
-var constant=0.5;
+var snow=false;
+var rain=false;
+var constant=0.8;
 var circleX = [];
 var circleY=[];
 var cr = [];
@@ -30,15 +40,18 @@ var score=0;
 var circleSpeed = 1;
 var missileY = [];
 var missileX = [];
-var missileInterval = 40;
+var missileInterval = 80;
 var missileLimit=6;
 var missileStatus=[];
 var missileSpeed=[];
 var building = [];
 var w = [];
-var highscore=0;
-if(localStorage.getItem('hscore')!=null)
-    highscore=localStorage.getItem("hscore");
+var ts2=0;
+var highscore;
+highscore=localStorage.getItem('hscore');
+if(highscore==null)
+    highscore=0;
+
 for(var c = 0; c<40; c++)
 {
     building[c]=[];
@@ -57,6 +70,14 @@ function initAll()
    ctx = canvas.getContext("2d");
    document.addEventListener("mouseup", mouseUpHandler,false);
    document.addEventListener("mousemove",mouseMoveHandler,false);
+   number=Math.floor(Math.random()*4+1);
+   if(number==1)
+        snow=true;
+    else if(number==2)
+        {    
+            rain=true;
+            snowSpeed=6;
+        }
    for(var c = 0; c<40; c++)
     {
         for(var r=0; r<10; r++)
@@ -77,7 +98,8 @@ function initAll()
             w[c][r].x+=150;
         }
     }
-   interval = setInterval(setTitle, 10);
+   interval = setInterval(setTitle, 20);
+   int = setInterval(time,100);
    setTitle();
 }
 function makeStart()
@@ -98,6 +120,8 @@ function setTitle()
    ctx.clearRect(0,0,canvas.width,canvas.height);
    drawMoon();
    drawBack();
+   if(number==1 || number==2)
+        drawWeather();
    drawBuilding();
    drawWindows();
    makeTree();
@@ -112,7 +136,7 @@ function setTitle()
    ctx.fillStyle = "#000000";
   ctx.font = "58px Impact";
   ctx.fillText("Start", 242, 408);
-
+    ts1=0;
   if(enter==true)
   {
     for(var i = 0; i<circleX.length; i++)
@@ -125,6 +149,9 @@ function setTitle()
     }
       ctx.clearRect(0,0,canvas.width,canvas.height);
       clearInterval(interval);
+      ts=0;
+      ts1=0;
+      ts2=0;
       int = setInterval(time,100);
       time();
       interval = setInterval(play,20);
@@ -135,6 +162,7 @@ function time()
 {
     ts++;
     ts1++;
+    ts2++;
 }
 function drawTarget()
 {
@@ -201,6 +229,8 @@ function play()
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawMoon();
     drawBack();
+    if(number==1 || number==2)
+        drawWeather();
     drawBuilding();
     drawWindows();
     makeTree();
@@ -209,13 +239,19 @@ function play()
     drawImpact();
     drawMissile();
     collisionDetection();
-    if(hits>=5)
+    if(hits>=4)
         {
-            if(score>highscore)
+            if(highscore==null)
+            {
                 localStorage.setItem('hscore',score);
+            }
+            else if(score>highscore)
+            {
+                localStorage.setItem('hscore',score);
+            }     
             win=true;
             clearInterval(interval);
-            interval=setInterval(setWin,5);
+            interval=setInterval(setWin,20);
             setWin();
         }
     if(missileX.length==missileLimit)
@@ -279,7 +315,13 @@ function print()
    ctx.fillStyle = "#ffffff";
    ctx.font = "20px Impact";
    ctx.fillText(""+score, 530, 25);
-   ctx.fillText("HI "+highscore, 430, 25);
+   ctx.fillText("Level "+level, 330, 25);
+   if(highscore!=null)
+        ctx.fillText("HI "+highscore, 430, 25);
+    else{
+        highscore=0;
+        ctx.fillText("HI "+highscore, 430, 25);
+    }
 }
 function drawBuilding(){
     ctx.beginPath();
@@ -329,6 +371,33 @@ function blowUp(){
         }
     }
 }
+function drawWeather()
+{
+  ctx.beginPath();
+  if(ts2>=4 && makesnow==true)
+  {
+      ts2=0;
+      width.push(Math.floor(Math.random()*5+2));
+      height.push(Math.floor(Math.random()*5+2));
+      snowX.push(Math.floor(Math.random()*(canvas.width-7)));
+      snowY.push(0);
+  }
+  for(var i = 0; i<height.length; i++)
+  {
+      if(snowY[i]>canvas.height-50)
+      {
+          snowY[i]=0;
+          makesnow = false;
+      }
+      ctx.rect(snowX[i],snowY[i], width[i],height[i]);
+      if(snow==true)
+            ctx.fillStyle = "#ffffff";
+    else if(rain==true)
+        ctx.fillStyle="#0000ff";
+      ctx.fill();
+      snowY[i]+=snowSpeed;
+  }
+}
 function resetLevel()
 {
     for(var i = 0; i<circleX.length; i++)
@@ -349,7 +418,7 @@ function resetLevel()
     }
     missileLimit+=2;
     missileInterval-=6;
-    constant+=0.5;
+    constant+=0.7;
     level++;
     score+=125;
 }
@@ -460,15 +529,18 @@ function setWin()
     ctx.clearRect(0,0,canvas.width,canvas.height);
     drawMoon();
     drawBack();
+    if(number==1 || number ==2)
+        drawWeather();
     drawBuilding();
     drawWindows();
+    makeTree();
     print();
     ctx.font = "100px Impact";
     ctx.fillStyle = "rgb(255,255,255)";
     ctx.fillText("Game Over",90,200);
     ctx.font = "50px Impact";
-    ctx.fillText("Score: "+score,230,280);
-    ctx.fillText("High: "+highscore,230,340);
+    ctx.fillText("Score: "+score,210,280);
+    ctx.fillText("High: "+highscore,210,340);
     ctx.font = "20px Courier New";
     if(yellow3==true)
          ctx.fillStyle = "#dbff4d";
