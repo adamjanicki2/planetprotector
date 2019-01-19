@@ -1,4 +1,4 @@
-window.onload = initAll;
+window.onload = startGame;
 var canvas;
 var ctx;
 var interval;
@@ -10,6 +10,7 @@ var y1;
 var xc;
 var yc;
 var int;
+var explosion;
 var ts=0;
 var ts1=0;
 var counter=0;
@@ -35,6 +36,7 @@ var circleX = [];
 var circleY=[];
 var cr = [];
 var s=[];
+var missileXSpeed=[];
 var newClick =false;
 var score=0;
 var circleSpeed = 1;
@@ -51,7 +53,6 @@ var highscore;
 highscore=localStorage.getItem('hscore');
 if(highscore==null)
     highscore=0;
-
 for(var c = 0; c<40; c++)
 {
     building[c]=[];
@@ -64,12 +65,14 @@ for(var c = 0; c<10; c++)
     for(var r=0; r<2; r++)
         w[c][r] = {x:0, y:0, status:1};
 }
-function initAll()
+function startGame()
 {
    canvas = document.getElementById("myCanvas");
    ctx = canvas.getContext("2d");
    document.addEventListener("mouseup", mouseUpHandler,false);
    document.addEventListener("mousemove",mouseMoveHandler,false);
+   explosion = new Audio();
+   explosion.src = "explosion.mp3";
    number=Math.floor(Math.random()*4+1);
    if(number==1)
         snow=true;
@@ -242,13 +245,13 @@ function play()
     if(hits>=4)
         {
             if(highscore==null)
-            {
-                localStorage.setItem('hscore',score);
-            }
-            else if(score>highscore)
-            {
-                localStorage.setItem('hscore',score);
-            }     
+           {
+               //insert chrome stuff
+           }
+           else if(score>highscore)
+           {
+               localStorage.setItem('hscore',score);
+           }    
             win=true;
             clearInterval(interval);
             interval=setInterval(setWin,20);
@@ -270,7 +273,7 @@ function collisionDetection()
             {
                 if(s[k]==1)
                 {
-                    if(realx+10>=circleX[k] && realx<=circleX[k]+cr[k] && realy+28>=circleY[k] && realy<=circleY[k]+cr[k])
+                    if(realx+10>=circleX[k]-cr[k] && realx<=circleX[k]+cr[k] && realy+24>=circleY[k]-cr[k] && realy<=circleY[k]+cr[k])
                     {
                         score+=50;
                         missileStatus[i]=0;
@@ -281,6 +284,7 @@ function collisionDetection()
             {
                 missileStatus[i]=0;
                 hits++;
+                explosion.play();
                 blowUp();
             }
         }
@@ -298,14 +302,36 @@ function drawMissile()
             makeRed(missileX[i],missileY[i]);
             makeOrange(missileX[i],missileY[i]);
             missileY[i]+=missileSpeed[i];
+            missileX[i]+=missileXSpeed[i];
         }
     }
     if(ts>missileInterval && missileY.length<missileLimit)
     {
-        missileX.push(Math.random()*450+75);
+        //missileX.push(Math.random()*450+75);
         missileY.push(-30);
         missileStatus.push(1);
-        missileSpeed.push(Math.random()*2+constant);
+        var ysp=Math.random()*2+constant;
+        missileSpeed.push(ysp);
+        var rand = Math.floor(Math.random()*2+1);
+        if(rand==1)
+        {
+             missileX.push(Math.random()*450+75);
+             missileXSpeed.push(0);
+        }
+        else if(rand==2)
+        {
+            var rand2=Math.floor(Math.random()*2+1);
+            if(rand2==1)
+            {
+                missileXSpeed.push(-1*(ysp/6));
+                missileX.push(Math.floor(Math.random()*200+350));
+            }
+            else if(rand2==2)
+            {
+                missileXSpeed.push((ysp/6));
+                missileX.push(Math.floor(Math.random()*200+50));
+            }
+        }
         ts=0;
     }
 }
@@ -414,6 +440,7 @@ function resetLevel()
         missileY.pop();
         missileStatus.pop();
         missileSpeed.pop();
+        missileXSpeed.pop();
         i--;
     }
     missileLimit+=2;
